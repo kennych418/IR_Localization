@@ -6862,9 +6862,9 @@ W = angled&lt;p&gt;
 <part name="LED1" library="led" library_urn="urn:adsk.eagle:library:259" deviceset="LED" device="5MM" package3d_urn="urn:adsk.eagle:package:15799/2"/>
 <part name="R1" library="resistor" library_urn="urn:adsk.eagle:library:348" deviceset="R-US_" device="R0603" package3d_urn="urn:adsk.eagle:package:26057/1" value="18"/>
 <part name="R2" library="resistor" library_urn="urn:adsk.eagle:library:348" deviceset="R-US_" device="R0603" package3d_urn="urn:adsk.eagle:package:26057/1" value="10k"/>
-<part name="R3" library="resistor" library_urn="urn:adsk.eagle:library:348" deviceset="R-US_" device="R0603" package3d_urn="urn:adsk.eagle:package:26057/1"/>
-<part name="R4" library="resistor" library_urn="urn:adsk.eagle:library:348" deviceset="R-US_" device="R0603" package3d_urn="urn:adsk.eagle:package:26057/1"/>
-<part name="R5" library="resistor" library_urn="urn:adsk.eagle:library:348" deviceset="R-US_" device="R0603" package3d_urn="urn:adsk.eagle:package:26057/1"/>
+<part name="R3" library="resistor" library_urn="urn:adsk.eagle:library:348" deviceset="R-US_" device="R0603" package3d_urn="urn:adsk.eagle:package:26057/1" value="1450"/>
+<part name="R4" library="resistor" library_urn="urn:adsk.eagle:library:348" deviceset="R-US_" device="R0603" package3d_urn="urn:adsk.eagle:package:26057/1" value="1450"/>
+<part name="R5" library="resistor" library_urn="urn:adsk.eagle:library:348" deviceset="R-US_" device="R0603" package3d_urn="urn:adsk.eagle:package:26057/1" value="1450"/>
 <part name="U$1" library="IR_Localization" deviceset="NMOS_SOT23" device=""/>
 <part name="SUPPLY1" library="supply2" library_urn="urn:adsk.eagle:library:372" deviceset="GND" device=""/>
 <part name="SUPPLY2" library="supply2" library_urn="urn:adsk.eagle:library:372" deviceset="GND" device=""/>
@@ -6883,6 +6883,10 @@ W = angled&lt;p&gt;
 <sheets>
 <sheet>
 <plain>
+<text x="-101.6" y="58.42" size="1.778" layer="91">Add mounting holes and small nonpopulated headers for the daisy chain</text>
+<text x="-99.06" y="-20.32" size="1.778" layer="91">Add mounting holes and small nonpopulated headers for the daisy chain</text>
+<text x="7.62" y="-20.32" size="1.778" layer="91">Add mounting holes and small nonpopulated headers for the daisy chain</text>
+<text x="5.08" y="60.96" size="1.778" layer="91">Add mounting holes and small nonpopulated headers for the daisy chain</text>
 </plain>
 <instances>
 <instance part="LED1" gate="G$1" x="5.08" y="27.94" smashed="yes">
