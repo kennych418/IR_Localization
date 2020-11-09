@@ -7487,11 +7487,12 @@ W = angled&lt;p&gt;
 <busses>
 </busses>
 <nets>
-<net name="N$2" class="0">
+<net name="LED+" class="0">
 <segment>
 <pinref part="LED1" gate="G$1" pin="A"/>
 <pinref part="R1" gate="G$1" pin="1"/>
 <wire x1="5.08" y1="30.48" x2="5.08" y2="33.02" width="0.1524" layer="91"/>
+<label x="5.08" y="30.48" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="GND" class="0">
@@ -7591,11 +7592,12 @@ W = angled&lt;p&gt;
 <wire x1="60.96" y1="76.2" x2="63.5" y2="76.2" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$4" class="0">
+<net name="LED-" class="0">
 <segment>
 <pinref part="U$1" gate="G$1" pin="D"/>
 <pinref part="LED1" gate="G$1" pin="C"/>
 <wire x1="5.08" y1="20.32" x2="5.08" y2="22.86" width="0.1524" layer="91"/>
+<label x="5.08" y="20.32" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="D13" class="0">
