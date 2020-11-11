@@ -13,6 +13,22 @@ BLEIntCharacteristic accelerationCharacteristic( BLE_UUID_ACCELERATION, BLERead 
 unsigned long start_timer = millis();
 unsigned long time_to_wait_IMU = 500;
 
+void init(){
+  BLE.scanForUuid( BLE_UUID_TEST_SERVICE );
+  BLEDevice peripheral = BLE.available();
+  if(peripheral){
+    //Function as central
+    Serial.println("Configuring as central");
+    Serial.print("Connected to: ");
+    Serial.println(peripheral.address());
+  }
+  else{
+    //Function as peripheral
+    Serial.println("Configuring as peripheral");
+    BLE.advertise();
+    Serial.println("Advertising");
+  }
+}
 
 bool setupBleMode()
 {
