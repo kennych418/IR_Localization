@@ -1,0 +1,12 @@
+Partlist exported from C:/Users/agrae/OneDrive/Documents/Academic/Classes/ECE/ECE202A/hardware/IR_Localization/IRLocalization.sch at 11/8/2020 9:35 PM
+
+Qty Value                Device               Package Parts                        Description               MF MPN OC_FARNELL OC_NEWARK POPULARITY
+4                        FE15-1               FE15    SV1, SV2, SV3, SV4           FEMALE HEADER                    unknown    unknown   2         
+1                        LED5MM               LED5MM  LED1                         LED                                                   93        
+4                        MA03-1               MA03-1  SV5, SV6, SV7, SV8           PIN HEADER                       unknown    unknown   48        
+1   10k                  R-US_R0603           R0603   R2                           RESISTOR, American symbol                                       
+6   1450                 R-US_R0603           R0603   R3, R4, R5, R6, R7, R8       RESISTOR, American symbol                                       
+1   18                   R-US_R0603           R0603   R1                           RESISTOR, American symbol                                       
+3   MOUNT-PAD-ROUND5.5   MOUNT-PAD-ROUND5.5   5,5-PAD H1, H2, H3                   MOUNTING PAD, round                                   0         
+1   NMOS_SOT23           NMOS_SOT23           SOT23   U$1                                                                                          
+6   PHOTOTRANSISTOR_2.54 PHOTOTRANSISTOR_2.54 2.54_TH U$2, U$3, U$4, U$5, U$6, U$7                                                                 
