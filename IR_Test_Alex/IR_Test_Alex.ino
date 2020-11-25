@@ -5,6 +5,7 @@
 #define IR_READ_AVE_N 40
 
 int raw_ir[3] = {0, 0, 0}; //This allows iteration more easily.
+int max_ir[3] = {0, 0, 0}; //This stores the filtered version.
 const int deg_ir[3] = {0, 120, 240};
 const int pin_location[3] = {IR_REC_0, IR_REC_120, IR_REC_240};
 const bool rec = true;
@@ -25,7 +26,37 @@ void read_IR() {
 
 float calculateDistance(){
   //This function calculates distance based on the maximum IR_raw value stored globally.
-  return -1.793*log(raw_ir[0]) + 15.297;
+//  return -1.793*log(max_ir[0]) + 15.297;
+//  return -1.396*log(max_ir[0])+13.734;
+  return -1.542*log(max_ir[0])+14.13;
+}
+
+float calculateStepwiseDistance(){
+  int reading = max_ir[0];
+  if (reading > 272) {
+    return 5.0;
+  }
+  else if (reading > 252) {
+    return 5.0+(reading-252.0)/20.0;
+  }
+  else if (reading > 188) {
+    return 5.5+(reading-188.0)/64.0;
+  }
+  else if (reading > 85) {
+    return 6.5+(reading-85.0)/103.0;
+  }
+  else if (reading > 44) {
+    return 7.5+(reading-44.0)/41.0;
+  }
+  else if (reading > 18) {
+    return 8.5+(reading-18.0)/26.0;
+  }
+  else if (reading > 9) {
+    return 9.5+(reading-9.0)/9.0;
+  }
+  else {
+    return -1.396*log(reading)+13.734;
+  }
 }
 
 void setup() {
@@ -43,7 +74,9 @@ void loop() {
     while (Serial.read() != '\n') {
       delay(1);
     }
-    int max_ir[3] = {0, 0, 0};
+    for (int i = 0; i < 3; ++i) {
+      max_ir[i] = 0;
+    }
     for (int n = 0; n < 12; ++n) {
       read_IR();
       for (int i = 0; i < 3; ++i) {
@@ -59,6 +92,7 @@ void loop() {
       Serial.println(max_ir[i]);
     }
     Serial.println(calculateDistance());
+    Serial.println(calculateStepwiseDistance());
     Serial.println();
 
   }
