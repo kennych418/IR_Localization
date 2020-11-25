@@ -1,12 +1,18 @@
 #include <ArduinoBLE.h>
 
 #define BLE_UUID_TEST_SERVICE               "59920589-d782-492d-8beb-0d211d66312f"
-#define BLE_UUID_ACCELERATION               "2713" //https://www.bluetooth.com/specifications/assigned-numbers/units/
+#define BLE_UUID_DIST                       "271C" //https://www.bluetooth.com/specifications/assigned-numbers/units/
+#define BLE_UUID_TIME                       "2703" //https://www.bluetooth.com/specifications/assigned-numbers/units/
+
+#define FLOATING_PIN1 A7
+#define FLOATING_PIN2 A6
 
 BLEService testService( BLE_UUID_TEST_SERVICE );
-BLEIntCharacteristic accelerationCharacteristic( BLE_UUID_ACCELERATION, BLERead | BLENotify );
+BLEUnsignedLongCharacteristic timeCharacteristic( BLE_UUID_TIME, BLERead | BLENotify );
+BLEUnsignedLongCharacteristic distCharacteristic( BLE_UUID_DIST, BLERead | BLENotify );
 
 bool mode = false;
+BLEDevice peripheral;
 
 void setup() {
   Serial.begin(9600);
@@ -18,21 +24,25 @@ void setup() {
     while (1);
   }
  
-  bool mode = initializeCentralorPeripheral();
-  if(mode)
-    Serial.println("Entering Central Mode");
-  else
-    Serial.println("Entering Peripheral Mode");
+  mode = initializeCentralorPeripheral();
 }
 
 bool initializeCentralorPeripheral(){ //not capable of meeting racing conditions
   BLE.scanForUuid( BLE_UUID_TEST_SERVICE );
-  delay(500); //create a random number between 500 and 2000
-  //add loop?
-  if(BLE.available()){ //act as central
+  
+  unsigned long start = millis();
+  unsigned long rand1 = analogRead( FLOATING_PIN1 )/6;
+  unsigned long rand2 = analogRead( FLOATING_PIN2 )/4;
+  unsigned long randDelay = rand1*rand2;
+  
+  while((millis() - start) < randDelay) Serial.println(randDelay); 
+  peripheral = BLE.available();
+  
+  if(peripheral){ //act as central
     digitalWrite(LED_BUILTIN, LOW);
     BLE.setDeviceName( "Arduino Nano 33 BLE Central" );
     BLE.setLocalName( "Arduino Nano 33 BLE Central" );
+    Serial.println("Entering Central Mode");
     return true;
   }
   else{ //act as peripheral
@@ -42,54 +52,33 @@ bool initializeCentralorPeripheral(){ //not capable of meeting racing conditions
     BLE.setLocalName( "Arduino Nano 33 BLE Peripheral" );
     BLE.setAdvertisedService( testService );
     BLE.setAdvertisedServiceUuid( BLE_UUID_TEST_SERVICE );
-    testService.addCharacteristic( accelerationCharacteristic );
+    testService.addCharacteristic( timeCharacteristic );
+    testService.addCharacteristic( distCharacteristic );
     BLE.addService( testService );
-    accelerationCharacteristic.writeValue( 52 );
+    timeCharacteristic.writeValue( 0 );
+    distCharacteristic.writeValue( 0 );
     BLE.advertise();
+    Serial.println("Entering Peripheral Mode");
     return false;
   }
 }
 
 void loop() {
-  // check if a peripheral has been discovered
-  
-//  if(mode){
-//    BLEDevice peripheral = BLE.available();
-//  }
-//  else{
-//    
-//  }
-//  BLEDevice peripheral = BLE.available();
-//
-//  if (peripheral) {
-//    // discovered a peripheral
-//    Serial.println("Discovered a peripheral");
-//    Serial.println("-----------------------");
-//
-//    // print address
-//    Serial.print("Address: ");
-//    Serial.println(peripheral.address());
-//
-//    // print the local name, if present
-//    if (peripheral.hasLocalName()) {
-//      Serial.print("Local Name: ");
-//      Serial.println(peripheral.localName());
-//    }
-//
-//    // print the advertised service UUIDs, if present
-//    if (peripheral.hasAdvertisedServiceUuid()) {
-//      Serial.print("Service UUIDs: ");
-//      for (int i = 0; i < peripheral.advertisedServiceUuidCount(); i++) {
-//        Serial.print(peripheral.advertisedServiceUuid(i));
-//        Serial.print(" ");
-//      }
-//      Serial.println();
-//    }
-//
-//    // print the RSSI
-//    Serial.print("RSSI: ");
-//    Serial.println(peripheral.rssi());
-//
-//    Serial.println();
-//  }
+  if(mode){ //Central
+    while(!peripheral.connect()) Serial.println("Connecting...");
+    while(peripheral.connected()){
+      Serial.println("Connected");
+    }
+    initializeCentralorPeripheral();
+  }
+  else{ //Peripheral
+    BLEDevice central = BLE.central();
+    Serial.println("Searching");
+    while(central){
+      Serial.print( "Connected to central: " );
+      Serial.println( central.deviceName() );
+      timeCharacteristic.writeValue( 0 );
+      distCharacteristic.writeValue( 0 );
+    }
+  }
 }
