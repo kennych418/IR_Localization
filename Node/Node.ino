@@ -18,16 +18,19 @@ void setup() {
   Serial.begin(9600);
   while (!Serial);
 
+  pinMode(LED_BUILTIN, OUTPUT);
+
   // begin initialization
   if (!BLE.begin()) {
     Serial.println("starting BLE failed!");
     while (1);
   }
- 
+  BLE.setLocalName("IRNode");
+
   mode = initializeCentralorPeripheral();
 }
 
-bool initializeCentralorPeripheral(){ //not capable of meeting racing conditions
+bool initializeCentralorPeripheral(){
   BLE.scanForUuid( BLE_UUID_TEST_SERVICE );
   
   unsigned long start = millis();
@@ -35,19 +38,22 @@ bool initializeCentralorPeripheral(){ //not capable of meeting racing conditions
   unsigned long rand2 = analogRead( FLOATING_PIN2 )/4;
   unsigned long randDelay = rand1*rand2;
   
-  while((millis() - start) < randDelay) Serial.println(randDelay); 
+  while((millis() - start) < randDelay); 
   peripheral = BLE.available();
   
   if(peripheral){ //act as central
     digitalWrite(LED_BUILTIN, LOW);
+    Serial.println("Entering Central Mode");
     BLE.setDeviceName( "Arduino Nano 33 BLE Central" );
     BLE.setLocalName( "Arduino Nano 33 BLE Central" );
-    Serial.println("Entering Central Mode");
+    while(!peripheral.connect()) Serial.println("Connecting...");
+    BLE.stopScan();
     return true;
   }
   else{ //act as peripheral
     BLE.stopScan();
     digitalWrite(LED_BUILTIN, HIGH);
+    Serial.println("Entering Peripheral Mode");
     BLE.setDeviceName( "Arduino Nano 33 BLE Peripheral" );
     BLE.setLocalName( "Arduino Nano 33 BLE Peripheral" );
     BLE.setAdvertisedService( testService );
@@ -57,24 +63,22 @@ bool initializeCentralorPeripheral(){ //not capable of meeting racing conditions
     BLE.addService( testService );
     timeCharacteristic.writeValue( 0 );
     distCharacteristic.writeValue( 0 );
-    BLE.advertise();
-    Serial.println("Entering Peripheral Mode");
     return false;
   }
 }
 
 void loop() {
   if(mode){ //Central
-    while(!peripheral.connect()) Serial.println("Connecting...");
     while(peripheral.connected()){
       Serial.println("Connected");
     }
     initializeCentralorPeripheral();
   }
   else{ //Peripheral
+    BLE.advertise();
+    //Serial.println("Searching");
     BLEDevice central = BLE.central();
-    Serial.println("Searching");
-    while(central){
+    while(central.connected()){
       Serial.print( "Connected to central: " );
       Serial.println( central.deviceName() );
       timeCharacteristic.writeValue( 0 );
