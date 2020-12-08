@@ -2,32 +2,42 @@
 
 #define BLE_UUID_IDANDENABLE_SERVICE        "59920589-d782-492d-8beb-0d211d66312f"
 #define BLE_UUID_DATA_SERVICE               "19B10000-E8F2-537E-4F6C-D104768A1214"
+#define BLE_UUID_SELF_SERVICE               "19A75601-A3C1-937D-8B5E-A483929A1832"
 
-#define BLE_UUID_IDS0                       "2813"
-#define BLE_UUID_IDS1                       "2456"
-#define BLE_UUID_IDS2                       "2690"
-#define BLE_UUID_IDS3                       "2344"
-#define BLE_UUID_IDS4                       "1234"
 #define BLE_UUID_ENABLE                     "2134"
-#define BLE_UUID_DIST                       "271C" 
+
+#define BLE_UUID_IR0                        "271C" 
+#define BLE_UUID_IR120                      "2F21" 
+#define BLE_UUID_IR240                      "2A65" 
+#define BLE_UUID_COMP                       "2245" 
 #define BLE_UUID_TIME                       "2703" 
+
+#define BLE_UUID_SELFIR0                        "351F" 
+#define BLE_UUID_SELFIR120                      "3F76" 
+#define BLE_UUID_SELFIR240                      "7A98" 
+#define BLE_UUID_SELFCOMP                       "5678" 
+#define BLE_UUID_SELFTIME                       "9023" 
 
 #define FLOATING_PIN1 A7
 #define FLOATING_PIN2 A6
 
-unsigned long ID = 0;
-
 BLEService IDandEnableService( BLE_UUID_IDANDENABLE_SERVICE );
 BLEService DataService( BLE_UUID_DATA_SERVICE );
+BLEService SelfService( BLE_UUID_SELF_SERVICE );
 
-BLEUnsignedLongCharacteristic IDs0Characteristic(BLE_UUID_IDS0, BLEWrite|BLERead);
-BLEUnsignedLongCharacteristic IDs1Characteristic(BLE_UUID_IDS1, BLEWrite|BLERead);
-BLEUnsignedLongCharacteristic IDs2Characteristic(BLE_UUID_IDS2, BLEWrite|BLERead);
-//BLEUnsignedLongCharacteristic IDs3Characteristic(BLE_UUID_IDS3, BLEWrite|BLERead);
-//BLEUnsignedLongCharacteristic IDs4Characteristic(BLE_UUID_IDS4, BLEWrite|BLERead);
 BLEUnsignedLongCharacteristic enableCharacteristic(BLE_UUID_ENABLE, BLEWrite|BLERead);
+
 BLEUnsignedLongCharacteristic timeCharacteristic( BLE_UUID_TIME, BLEWrite|BLERead);
-BLEUnsignedLongCharacteristic distCharacteristic( BLE_UUID_DIST, BLEWrite|BLERead);
+BLEUnsignedLongCharacteristic ir0Characteristic( BLE_UUID_IR0, BLEWrite|BLERead);
+BLEUnsignedLongCharacteristic ir120Characteristic( BLE_UUID_IR120, BLEWrite|BLERead);
+BLEUnsignedLongCharacteristic ir240Characteristic( BLE_UUID_IR240, BLEWrite|BLERead);
+BLEUnsignedLongCharacteristic compCharacteristic( BLE_UUID_COMP, BLEWrite|BLERead);
+
+BLEUnsignedLongCharacteristic selftimeCharacteristic( BLE_UUID_SELFTIME, BLEWrite|BLERead);
+BLEUnsignedLongCharacteristic selfir0Characteristic( BLE_UUID_SELFIR0, BLEWrite|BLERead);
+BLEUnsignedLongCharacteristic selfir120Characteristic( BLE_UUID_SELFIR120, BLEWrite|BLERead);
+BLEUnsignedLongCharacteristic selfir240Characteristic( BLE_UUID_SELFIR240, BLEWrite|BLERead);
+BLEUnsignedLongCharacteristic selfcompCharacteristic( BLE_UUID_SELFCOMP, BLEWrite|BLERead);
 
 void setup() {
   Serial.begin(9600);
@@ -52,8 +62,7 @@ void loop() {
   unsigned long rand1 = analogRead( FLOATING_PIN1 )/6;
   unsigned long rand2 = analogRead( FLOATING_PIN2 )/4;
   unsigned long randDelay = rand1*rand2+1;
-  ID = randDelay;
-  Serial.print("Random delay & ID: "); Serial.println(randDelay);
+  Serial.print("Random delay: "); Serial.println(randDelay);
   while((millis() - start) < randDelay); 
 
 
@@ -61,6 +70,7 @@ void loop() {
 
   /////////////////Central/////////////////
   int trials = 6000;
+  unsigned long enable = 0;
   for(int i = 0; i < trials; i++){
     BLEDevice peripheral = BLE.available();
     if(peripheral){ //Central
@@ -72,17 +82,18 @@ void loop() {
       Serial.println("Entering Central Mode");
       while(1){  
         if(peripheral.connect()){
-          Serial.println("Connected");
           while(!peripheral.discoverAttributes());
-          BLECharacteristic IDS = peripheral.characteristic(BLE_UUID_IDS0);
+          Serial.println("Connected");
           BLECharacteristic ENABLE = peripheral.characteristic(BLE_UUID_ENABLE);
-          BLECharacteristic DIST = peripheral.characteristic(BLE_UUID_DIST);
+          BLECharacteristic IR = peripheral.characteristic(BLE_UUID_IR0);
           BLECharacteristic TIME = peripheral.characteristic(BLE_UUID_TIME);
           while(peripheral.connected()){
-            unsigned long distancevalue = 0;
-            IDS.writeValue(ID);
-            DIST.readValue(distancevalue);
-            Serial.println(distancevalue);
+            unsigned long measurement = 0;
+            unsigned long timemeasurement = 0;
+            IR.writeValue(measurement); // <----------------------------Write values in here
+            TIME.writeValue(timemeasurement); // <----------------------------Write values in here
+            ENABLE.readValue(enable); // <----------------------Read values here
+            Serial.println(enable);
           }
         }
         else{
@@ -102,76 +113,48 @@ void loop() {
     digitalWrite(LED_BUILTIN, HIGH);
     Serial.println("Entering Peripheral Mode");
 
-    int count = 0;
-    unsigned long ID = 0;
-
     BLE.setAdvertisedService( DataService );
     BLE.setAdvertisedServiceUuid( BLE_UUID_DATA_SERVICE );
-    IDandEnableService.addCharacteristic( IDs0Characteristic );
-    IDandEnableService.addCharacteristic( IDs1Characteristic );
-    IDandEnableService.addCharacteristic( IDs2Characteristic );
+
     IDandEnableService.addCharacteristic( enableCharacteristic );
+
     DataService.addCharacteristic( timeCharacteristic );
-    DataService.addCharacteristic( distCharacteristic );
+    DataService.addCharacteristic( ir0Characteristic );
+    DataService.addCharacteristic( ir120Characteristic );
+    DataService.addCharacteristic( ir240Characteristic );
+    DataService.addCharacteristic( compCharacteristic );
+
+    SelfService.addCharacteristic( selftimeCharacteristic );
+    SelfService.addCharacteristic( selfir0Characteristic );
+    SelfService.addCharacteristic( selfir120Characteristic );
+    SelfService.addCharacteristic( selfir240Characteristic );
+    SelfService.addCharacteristic( selfcompCharacteristic );
+
     BLE.addService( IDandEnableService );
     BLE.addService( DataService );
-    IDs0Characteristic.writeValue( 0 );
-    IDs1Characteristic.writeValue( 0 );
-    IDs2Characteristic.writeValue( 0 );
-    enableCharacteristic.writeValue( 2 );
-    timeCharacteristic.writeValue( 0 );
-    distCharacteristic.writeValue( 0 );
-    BLE.advertise();
+    BLE.addService( SelfService );
 
+    enableCharacteristic.writeValue( 0 );
+    timeCharacteristic.writeValue( 0 );
+    ir0Characteristic.writeValue( 0 );
+    BLE.advertise();
+    
+    start = millis();    
     while(1){
       BLE.poll();
 
-      if(count < 2000)
-        count++;
-      else
-        count = 0;
-      //timeCharacteristic.writeValue( count );
-      //distCharacteristic.writeValue( count );
-
-      //for (int centralIdx; centralIdx < ){
-      //  
-      //}
-
-
-      if(BLE.centralCount() < 3){
-        BLE.setDeviceName("IRNode");
-        BLE.setLocalName("IRNode");
-        BLE.setAdvertisedService( DataService );
-        BLE.setAdvertisedServiceUuid( BLE_UUID_DATA_SERVICE );
-        Serial.print("Num central: ");
-        Serial.println(BLE.centralCount());
-        BLE.advertise();
+      if((millis()-start) > 1000){    //<----------------------------Set timer
+        enableCharacteristic.writeValue(0); //<----------------------------Alternate your emitter + Read/Write Stuff
+        start = millis();
       }
       else{
-        Serial.print("Num central: ");
-        Serial.println(BLE.centralCount());
+        enableCharacteristic.writeValue(1);      //<----------------------------Alternate your emitter + Read/Write Stuff
       }
-      //IDs0Characteristic.readValue(ID);
-      //Serial.println(ID);
-//      if(central){
-//        //if(central.deviceName() != "IRNode"){
-//        //  Serial.println("Detected but Missed");
-//        //  continue;
-//        //}
-//        unsigned long count = 0;
-//        unsigned long ID = 0;
-//        while(central.connected()){
-//          if(count > 2000){
-//            count = 0;
-//            //IDs0Characteristic.writeValue(0);
-//          }
-//          else
-//            count++;
-//          timeCharacteristic.writeValue( count );
-//          distCharacteristic.writeValue( count );
-//          IDs0Characteristic.readValue(ID);
-//          Serial.println(ID);
-//        }
-//      }
+
+      BLE.setDeviceName("IRNode");
+      BLE.setLocalName("IRNode");
+      BLE.setAdvertisedService( DataService );
+      BLE.setAdvertisedServiceUuid( BLE_UUID_DATA_SERVICE );
+      BLE.advertise();
     }
 }
