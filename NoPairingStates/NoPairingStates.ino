@@ -13,7 +13,7 @@
 #define IR_READ_AVE_N 40
 
 #define MAX_NUM_NODES 10
-#define NUM_VALUES_PER_NODE 6
+#define NUM_VALUES_PER_NODE 7 //These 7 values are as follows: ID,compass,IR0,IR120,IR240,data_good,state
 #define NUM_STATES 6
 
 uint16_t valueArray[MAX_NUM_NODES][NUM_VALUES_PER_NODE];
@@ -31,7 +31,7 @@ const int deg_ir[3] = {0, 120, 240};
 const int pin_location[3] = {IR_REC_0, IR_REC_120, IR_REC_240};
 
 BLEService KEY( BLE_UUID_KEY ); 
-bool scanning = true;
+bool receiving_data = false;
 unsigned long start = 0;
 
 void read_IR() {
@@ -187,9 +187,9 @@ bool discoverNodes() {
     }
   }
   //Initialize states
-  valueArray[0][5] = 0;
+  valueArray[0][NUM_VALUES_PER_NODE-1] = 0;
   for (int i = 1; i < numNodes; ++i) {
-    valueArray[i][5] = 2;
+    valueArray[i][NUM_VALUES_PER_NODE-1] = 2;
   }
 
   Serial.print("myIndex: ");
@@ -262,30 +262,62 @@ void loop() {
     BLEDevice peripheral = BLE.available();
     if(peripheral){
       String data = peripheral.localName();
+//      Serial.print("Received ");
 //      Serial.println(data);
-      int sc_position = 0;
-      for (int i = 0; i < data.length(); ++i) {
-        if (data[i] == ';') {
-          sc_position = i;
-          i = data.length();
+      if (data[0] == '_') {
+        if (receiving_data) {
+          //This is a data stream not a state update.
+          data.remove(0,1);
+          int ID = data.toInt();
+          data.remove(0,data.indexOf(',')+1);
+          for (int i = 0; i < numNodes; ++i) {
+            if (ID == valueArray[i][0]) {
+//              Serial.println(data);
+              valueArray[i][1] = data.toInt();
+              data.remove(0,data.indexOf(',')+1);
+//              Serial.println(data);
+              valueArray[i][2] = data.toInt();
+              data.remove(0,data.indexOf(',')+1);
+//              Serial.println(data);
+              valueArray[i][3] = data.toInt();
+              data.remove(0,data.indexOf(',')+1);
+//              Serial.println(data);
+              valueArray[i][4] = data.toInt();
+              valueArray[i][5] = 1;
+            }
+          }
+          receiving_data = false;
+          //Parse the string
+          //Store in valueArray
+          //Update the data_good field to 1
         }
       }
-      String id_str = data;
-      String state_str = data;
-      id_str.remove(sc_position);
-      state_str.remove(0,sc_position+1);
-      uint16_t id = id_str.toInt();
-      uint16_t st = state_str.toInt();
-      for (int i = 0; i < numNodes; ++i) {
-        if (valueArray[i][0] == id) valueArray[i][5] = st;
+      else {
+  //      Serial.println(data);
+        int sc_position = 0;
+        for (int i = 0; i < data.length(); ++i) {
+          if (data[i] == ';') {
+            sc_position = i;
+            i = data.length();
+          }
+        }
+        String id_str = data;
+        String state_str = data;
+        id_str.remove(sc_position);
+        state_str.remove(0,sc_position+1);
+        uint16_t id = id_str.toInt();
+        uint16_t st = state_str.toInt();
+        for (int i = 0; i < numNodes; ++i) {
+          if (valueArray[i][0] == id) valueArray[i][NUM_VALUES_PER_NODE-1] = st;
+        }
+  //      delay(random(1,100)); //Preventing accidental synchronization.
+  //      break;
       }
-//      delay(random(1,100)); //Preventing accidental synchronization.
-//      break;
     }
   }
 
   //Execute node's current state
-  switch (valueArray[myIndex][NUM_VALUES_PER_NODE-1]) { //valueArray[myIndex][5] is the node state.
+  switch (valueArray[myIndex][NUM_VALUES_PER_NODE-1]) { //valueArray[myIndex][NUM_VALUES_PER_NODE-1] is the node state.
     case 0: {
       //TODO: Turn emitter on for a cycle.
       while (!IMU.magneticFieldAvailable());
@@ -308,18 +340,40 @@ void loop() {
       }
       if (continue_flag) {
         valueArray[myIndex][NUM_VALUES_PER_NODE-1] = 1;
+        for (int i = 0; i < numNodes; ++i) {  //Clear the data good flag for values that still need to be written.
+          if (i != myIndex) {
+            valueArray[i][5] = 0;
+          }
+        }
       }
       break;
     }
     case 1: {
       //Receive data
-      delay(100);
-      currentIndex = (currentIndex+1)%numNodes;
-      valueArray[myIndex][NUM_VALUES_PER_NODE-1] = 2;
+      receiving_data = false;
+      bool data_received = true;
+      for (int i = 0; i < numNodes; ++i) {
+        if (i != myIndex && valueArray[i][NUM_VALUES_PER_NODE-2] == 0) {
+          data_received = false;
+          receiving_data = true;
+        }
+      }
+      if (data_received) {
+        valueArray[myIndex][NUM_VALUES_PER_NODE-1] = 2;
+        Serial.print(",");
+        Serial.print(valueArray[(myIndex+1)%2][1]);
+        Serial.print(",");
+        Serial.print(valueArray[(myIndex+1)%2][2]);
+        Serial.print(",");
+        Serial.print(valueArray[(myIndex+1)%2][3]);
+        Serial.print(",");
+        Serial.println(valueArray[(myIndex+1)%2][4]);
+        currentIndex = (currentIndex+1)%numNodes;
+      }
       break;
     }
     case 2: {
-      if (valueArray[currentIndex][5] == 0) {
+      if (valueArray[currentIndex][NUM_VALUES_PER_NODE-1] == 0) {
         valueArray[myIndex][NUM_VALUES_PER_NODE-1] = 3;
       }
       break;
@@ -348,13 +402,23 @@ void loop() {
       Serial.print(",");
       Serial.print(max_ir[1]);
       Serial.print(",");
-      Serial.println(max_ir[2]);
+      Serial.print(max_ir[2]);
       valueArray[myIndex][NUM_VALUES_PER_NODE-1] = 4;
       break;
     }
     case 4: {
       //Transmit Data
-      delay(100);
+      BLE.stopScan();
+      String nodename = String(myID);
+      String localname = "_" + nodename + "," + String((int)getCompassHeading()) + "," + String(max_ir[0]) + "," + String(max_ir[1]) + "," + String(max_ir[2]);
+      char buf[99];
+//      Serial.print("Sending: ");
+//      Serial.println(localname);
+      localname.toCharArray(buf,localname.length()+1);  //Convert to C string for BLE to use, can't use arduino Strings
+      BLE.setLocalName(buf);
+      start = millis();
+      BLE.advertise();
+      delay(150);
       if (valueArray[currentIndex][NUM_VALUES_PER_NODE-1] == 2) {
         valueArray[myIndex][NUM_VALUES_PER_NODE-1] = 5;
       }
@@ -380,6 +444,7 @@ void loop() {
   
   //Transmit state information
 //  Serial.print("Broadcasting ");
+  BLE.stopAdvertise();
   BLE.stopScan();
   String nodename = String(myID);
 //  nodename.concat((char)(myID>>8));
