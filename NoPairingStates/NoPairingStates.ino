@@ -1,5 +1,12 @@
-#include <TensorFlowLite.h>
-#include "dist_model.h"
+//#include <TensorFlowLite.h>
+//#include "tensorflow/lite/micro/all_ops_resolver.h"
+//#include "tensorflow/lite/micro/micro_error_reporter.h"
+//#include "tensorflow/lite/micro/micro_interpreter.h"
+//#include "tensorflow/lite/schema/schema_generated.h"
+//#include "tensorflow/lite/version.h"
+//
+//#include "dist_model.h"
+//#include "angle_model.h"
 
 #include <ArduinoBLE.h>
 #include <Arduino_LSM9DS1.h>
@@ -36,6 +43,32 @@ const int pin_location[3] = {IR_REC_0, IR_REC_120, IR_REC_240};
 BLEService KEY( BLE_UUID_KEY ); 
 bool receiving_data = false;
 unsigned long start = 0;
+
+
+
+
+//// Globals, used for compatibility with Arduino-style sketches.
+//namespace {
+//tflite::ErrorReporter* error_reporter = nullptr;
+//const tflite::Model* dist_model = nullptr;
+//const tflite::Model* angle_model = nullptr;
+//tflite::MicroInterpreter* interpreter = nullptr;
+//TfLiteTensor* input = nullptr;
+//TfLiteTensor* output = nullptr;
+//int inference_count = 0;
+//
+//// Create an area of memory to use for input, output, and intermediate arrays.
+//// Minimum arena size, at the time of writing. After allocating tensors
+//// you can retrieve this value by invoking interpreter.arena_used_bytes().
+//const int kModelArenaSize = 64*1024;//2468;
+//// Extra headroom for model + alignment + future interpreter changes.
+//const int kExtraArenaSize = 560 + 16 + 100;
+//const int kTensorArenaSize = kModelArenaSize + kExtraArenaSize;
+//uint8_t tensor_arena[kTensorArenaSize];
+//}  // namespace
+
+
+
 
 void read_IR() {
   for (int i = 0; i < 3; ++i) {
@@ -247,6 +280,60 @@ void setup() {
   BLE.setAdvertisingInterval(60);
 
   discoverNodes();
+
+//  Serial.println("Starting TensorFlow Lite setup...");
+//
+//  static tflite::MicroErrorReporter micro_error_reporter;
+//  error_reporter = &micro_error_reporter;
+//
+//  Serial.println("...");
+//
+//  // Map the model into a usable data structure. This doesn't involve any
+//  // copying or parsing, it's a very lightweight operation.
+//  dist_model = tflite::GetModel(d_model);
+//  if (dist_model->version() != TFLITE_SCHEMA_VERSION) {
+//    Serial.println("Error");
+//    TF_LITE_REPORT_ERROR(error_reporter,
+//                         "Model provided is schema version %d not equal "
+//                         "to supported version %d.",
+//                         dist_model->version(), TFLITE_SCHEMA_VERSION);
+//    return;
+//  }
+//  Serial.println("...");
+//
+//  // This pulls in all the operation implementations we need.
+//  // NOLINTNEXTLINE(runtime-global-variables)
+//  static tflite::AllOpsResolver resolver;
+//  Serial.println("...");
+//
+//  // Build an interpreter to run the model with.
+//  static tflite::MicroInterpreter static_interpreter(
+//      dist_model, resolver, tensor_arena, kTensorArenaSize, error_reporter);
+//  interpreter = &static_interpreter;
+//  Serial.println("...");
+//
+//  Serial.println("Allocating space for tensors");
+//
+//  // Allocate memory from the tensor_arena for the model's tensors.
+//  TfLiteStatus allocate_status = interpreter->AllocateTensors();
+//  if (allocate_status != kTfLiteOk) {
+//    Serial.println("Error");
+//    TF_LITE_REPORT_ERROR(error_reporter, "AllocateTensors() failed");
+//    return;
+//  }
+//
+//  Serial.print("Arena used bytes: ");
+//  Serial.println(interpreter->arena_used_bytes());
+//
+//  // Obtain pointers to the model's input and output tensors.
+//  input = interpreter->input(0);
+//  output = interpreter->output(0);
+//
+//  // Keep track of how many inferences we have performed.
+//  inference_count = 0;
+//
+//  Serial.println("TensorFlow Lite setup complete.");
+  
   while (Serial.read()!='d') ;
 }
 
@@ -370,21 +457,37 @@ void loop() {
       if (data_received) {
         valueArray[myIndex][NUM_VALUES_PER_NODE-1] = 2;
         Serial.print((int)getCompassHeading());
+//        input->data.f[0] = 0; //Not using compass directly
         Serial.print(",");
         Serial.print(max_ir[0]);
+//        input->data.f[1] = max_ir[0];
         Serial.print(",");
         Serial.print(max_ir[1]);
+//        input->data.f[2] = max_ir[1];
         Serial.print(",");
         Serial.print(max_ir[2]);
+//        input->data.f[3] = max_ir[2];
         Serial.print(",");
         Serial.print(valueArray[(myIndex+1)%2][1]);
+//        input->data.f[4] = 0; //Not using compass directly
         Serial.print(",");
         Serial.print(valueArray[(myIndex+1)%2][2]);
+//        input->data.f[5] = valueArray[(myIndex+1)%2][2];
         Serial.print(",");
         Serial.print(valueArray[(myIndex+1)%2][3]);
+//        input->data.f[6] = valueArray[(myIndex+1)%2][2];
         Serial.print(",");
         Serial.println(valueArray[(myIndex+1)%2][4]);
+//        input->data.f[7] = valueArray[(myIndex+1)%2][2];
+//        input->data.f[8] = (valueArray[(myIndex+1)%2][1]-(uint16_t)getCompassHeading()+180)%360;
         currentIndex = (currentIndex+1)%numNodes;
+//        TfLiteStatus invoke_status = interpreter->Invoke();
+//        if (invoke_status != kTfLiteOk) {
+//          TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed\n");
+//          return;
+//        }
+//        Serial.print("Distance: ");
+//        Serial.println(output->data.f[0]*10);
       }
       break;
     }
