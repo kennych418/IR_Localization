@@ -1,3 +1,6 @@
+#include <TensorFlowLite.h>
+#include "dist_model.h"
+
 #include <ArduinoBLE.h>
 #include <Arduino_LSM9DS1.h>
 
@@ -241,6 +244,7 @@ void setup() {
   BLE.setAdvertisedService( KEY );
   BLE.setAdvertisedServiceUuid( BLE_UUID_KEY );
   BLE.addService( KEY );
+  BLE.setAdvertisingInterval(60);
 
   discoverNodes();
   while (Serial.read()!='d') ;
@@ -255,8 +259,11 @@ void loop() {
   //Pseudocode in loop:
   //Scan for state information
 //  Serial.print("Scanning ");
+//  Serial.print("About to stop advertise in state receive ... ");
   BLE.stopAdvertise();
+//  Serial.print("stopped advertising, scanning for uuid ... ");
   BLE.scanForUuid(BLE_UUID_KEY);    //TODO: We need to have multiple BLE_UUID_KEY
+//  Serial.print("scanned for uuid ... entering receive loop ... ");
   start = millis();
   while (millis() - start < 250+random_int) { //Previously 250+random_int
     BLEDevice peripheral = BLE.available();
@@ -264,6 +271,7 @@ void loop() {
       String data = peripheral.localName();
 //      Serial.print("Received ");
 //      Serial.println(data);
+
       if (data[0] == '_') {
         if (receiving_data) {
           //This is a data stream not a state update.
@@ -315,6 +323,7 @@ void loop() {
       }
     }
   }
+//  Serial.println("after serial receive loop.");
 
   //Execute node's current state
   switch (valueArray[myIndex][NUM_VALUES_PER_NODE-1]) { //valueArray[myIndex][NUM_VALUES_PER_NODE-1] is the node state.
@@ -360,6 +369,13 @@ void loop() {
       }
       if (data_received) {
         valueArray[myIndex][NUM_VALUES_PER_NODE-1] = 2;
+        Serial.print((int)getCompassHeading());
+        Serial.print(",");
+        Serial.print(max_ir[0]);
+        Serial.print(",");
+        Serial.print(max_ir[1]);
+        Serial.print(",");
+        Serial.print(max_ir[2]);
         Serial.print(",");
         Serial.print(valueArray[(myIndex+1)%2][1]);
         Serial.print(",");
@@ -379,6 +395,7 @@ void loop() {
       break;
     }
     case 3: {
+//      Serial.print("At the start of state 3 ... ");
       //Collect data
       for (int i = 0; i < 3; ++i) {
         max_ir[i] = 0;
@@ -396,31 +413,44 @@ void loop() {
           prev_millis = millis();
         }
       }
-      Serial.print((int)getCompassHeading());
-      Serial.print(",");
-      Serial.print(max_ir[0]);
-      Serial.print(",");
-      Serial.print(max_ir[1]);
-      Serial.print(",");
-      Serial.print(max_ir[2]);
+//      Serial.print((int)getCompassHeading());
+//      Serial.print(",");
+//      Serial.print(max_ir[0]);
+//      Serial.print(",");
+//      Serial.print(max_ir[1]);
+//      Serial.print(",");
+//      Serial.print(max_ir[2]);
+//      Serial.print(" at the end of state 3 ... ");
       valueArray[myIndex][NUM_VALUES_PER_NODE-1] = 4;
+//      Serial.println("next state set to 4");
       break;
     }
     case 4: {
-      //Transmit Data
-      BLE.stopScan();
-      String nodename = String(myID);
-      String localname = "_" + nodename + "," + String((int)getCompassHeading()) + "," + String(max_ir[0]) + "," + String(max_ir[1]) + "," + String(max_ir[2]);
-      char buf[99];
-//      Serial.print("Sending: ");
-//      Serial.println(localname);
-      localname.toCharArray(buf,localname.length()+1);  //Convert to C string for BLE to use, can't use arduino Strings
-      BLE.setLocalName(buf);
-      start = millis();
-      BLE.advertise();
-      delay(150);
       if (valueArray[currentIndex][NUM_VALUES_PER_NODE-1] == 2) {
         valueArray[myIndex][NUM_VALUES_PER_NODE-1] = 5;
+      }
+      else {
+        //Transmit Data
+//        Serial.print("Before stop scan ... ");
+        BLE.stopScan();
+//        Serial.print("after stop scan before stop advertise ... ");
+//        BLE.stopAdvertise();
+//        Serial.print("after stop advertise ... ");
+        String nodename = String(myID);
+        String localname = "_" + nodename + "," + String((int)getCompassHeading()) + "," + String(max_ir[0]) + "," + String(max_ir[1]) + "," + String(max_ir[2]);
+        char buf[99];
+  //      Serial.print("Sending: ");
+  //      Serial.println(localname);
+        localname.toCharArray(buf,localname.length()+1);  //Convert to C string for BLE to use, can't use arduino Strings
+        BLE.setLocalName(buf);
+//        start = millis();
+//        Serial.print("before state 4 advertise ... remote state is ");
+//        Serial.print(valueArray[currentIndex][NUM_VALUES_PER_NODE-1]);
+        BLE.advertise();
+//        Serial.println(" ... after advertise.");
+        delay(150);
+        BLE.stopAdvertise();
+        delay(500);
       }
       break;
     }
@@ -444,8 +474,11 @@ void loop() {
   
   //Transmit state information
 //  Serial.print("Broadcasting ");
+//  Serial.print("About to stop advertising in broadcast ... ");
   BLE.stopAdvertise();
+//  Serial.print("stopped advertising, about to stop scan ... ");
   BLE.stopScan();
+//  Serial.println("stopped scanning.");
   String nodename = String(myID);
 //  nodename.concat((char)(myID>>8));
 //  nodename.concat((char)(myID&0x0f));  //Start with node name
@@ -454,8 +487,10 @@ void loop() {
   char buf[99];
   localname.toCharArray(buf,localname.length()+1);  //Convert to C string for BLE to use, can't use arduino Strings
   BLE.setLocalName(buf);
-  start = millis();
+//  start = millis();
+//  Serial.print("About to advertise for broadcast state ... ");
   BLE.advertise();
+//  Serial.println("after advertise command.");
 //  Serial.println(localname);
   delay(150-random_int); //Previously 150-random_int
 //  Serial.println(statestring);

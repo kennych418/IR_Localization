@@ -68,12 +68,21 @@ void setup() {
   Serial.begin(9600);
 }
 
+
+int count = 0;
+
 void loop() {
   // put your main code here, to run repeatedly:
   if (rec) {
-    while (Serial.read() != '\n') {
+    ++count;
+    char c = Serial.read();
+    while (c != '\n' && c != 'r' && c != 'b') {
       delay(1);
+      c = Serial.read();
     }
+    if (c == 'b') --count;
+    Serial.print(count);
+    Serial.print(',');
     for (int i = 0; i < 3; ++i) {
       max_ir[i] = 0;
     }
@@ -87,12 +96,14 @@ void loop() {
       delay(1);
     }
     for (int i = 0; i < 3; ++i) {
-      Serial.print(deg_ir[i]);
-      Serial.print(": ");
-      Serial.println(max_ir[i]);
+//      Serial.print(deg_ir[i]);
+//      Serial.print(": ");
+      Serial.print(max_ir[i]);
+      Serial.print(',');
+//      Serial.println();
     }
-    Serial.println(calculateDistance());
-    Serial.println(calculateStepwiseDistance());
+//    Serial.println(calculateDistance());
+//    Serial.println(calculateStepwiseDistance());
     Serial.println();
 
   }
